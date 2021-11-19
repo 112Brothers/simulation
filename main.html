@@ -1,0 +1,263 @@
+
+<html>
+<style type="text/css">
+	
+*{margin:0;}
+</style>
+<canvas id='c'></canvas>
+
+<script type="text/javascript">
+	var canv = document.getElementById('c');
+	var ctx = canv.getContext('2d');
+//var creats = [{}];\
+var sq = 1;
+var draw_ = true;
+function sw() {draw_=!draw_;}
+var rast = [/*{x:12,y:12,sem:[],sz:1,h:28,hs:10,'age':1},*/{x:152,y:122,sem:[],sz:1,h:28,hs:10,'age':1}];
+var pred = [{f:0,fx:0,fy:0,t:'t',x:140,y:80,h:25,sz:2,age:1},{t:'h',x:190,y:20,h:95,sz:2,age:1},
+{t:'t',x:190,y:90,h:95,sz:2,age:1}
+];
+var w_x=1,w_y=1;
+var w_l=12;
+var W = window.innerWidth;
+var H = window.innerHeight;
+canv.width=W;
+canv.height=H;
+var sems=[];
+var field = [];
+var ground = [];
+
+for(var i=0;i<H*2.5;i++)
+{
+field[i]=[];
+ground[i]=[];
+for(var j=0;j<W*2.5;j++) {field[i][j]=false;ground[i][j]=20;}
+}
+
+field[rast[0].y][rast[0].x]=true;
+
+function dist(x1,y1,x2,y2)
+{
+return Math.sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
+}
+
+
+var tt=false;
+
+function draw()
+{
+if(draw_){ctx.fillStyle='black';
+ctx.fillRect(0,0,W,H);
+}
+//console.log('jghviu');
+if(w_l==0) { //WHISTLE
+	w_x = 1-Math.floor(Math.random()*3);
+	w_y = 1-Math.floor(Math.random()*3);
+	w_l=  Math.floor(Math.random()*15+5);
+
+w_x*=1.2;
+w_y*=1.2;
+
+}
+	else w_l--;
+
+if(draw_){
+ctx.fillStyle='gold';
+ctx.font='bold 20px Arial';
+ctx.fillText('wx:'+w_x+', wy:'+w_y,20,20);
+}
+
+
+ctx.fillStyle='green';
+
+for(var i=0;i<rast.length;i++)//обработка растений
+{
+//console.log('ok');
+if(rast[i]===undefined) continue;
+
+
+var this_r = rast[i], rsx=this_r.x,rsy=this_r.y;
+var age = this_r.age;
+if(age>150&&Math.random()>0.9) {field[rsy][rsx]=false;delete rast[i];continue;} //старение и умирание растений
+this_r.age++;
+var high_s = this_r.hs;
+
+if(draw_)ctx.fillRect(rsx*sq,rsy*sq,sq,sq);
+
+this_r.h-=0.4;
+if(this_r.h<=0) { field[rsy][rsx]=false;delete rast[i];continue;} // умирание из-за недостатка энергии 
+
+if(ground[rsy][rsx]!=0){
+var pl_en = 1+Math.random();
+this_r.sz+=pl_en;
+this_r.h+=pl_en; 
+ground[rsy][rsx]--;}
+
+
+
+if(this_r.h>=20&&Math.random()>0.5) {sems.push({hs:this_r.hs+1-Math.floor(Math.random()*3),ex:true,high:this_r.hs,h:14,x:rsx,y:rsy,sz:1,age:1});this_r.h-=10;} 
+
+
+} // end rast's loop
+
+
+ctx.fillStyle='grey';
+
+for(var j=0;j<sems.length;j++){ // обработка семян
+var this_s = sems[j];
+if(this_s.ex!=true) continue;
+var smy = Math.floor(this_s.y),smx=Math.floor(this_s.x), s_high = this_s.high;
+if(smy<0) {smy=H-1;this_s.y=H-1;}
+if(smx<0) {smx=W-1;this_s.x=W-1;}
+if(smy>H-1) {smy=0;this_s.y=0;}
+if(smx>W-1) {smx=0;this_s.x=0;}
+
+
+
+if(s_high==0) {
+this_s.ex=false;
+var sem_hs = this_s.hs;
+if(field[smy][smx]===true) continue;
+field[smy][smx]=true;
+rast.push({t:'r',hs:sem_hs,'x':smx,'y':smy,'sem':[],h:20,'age':1,sz:1});	
+continue;
+} else this_s.high--;
+sems[j].x+=w_x; smx+=w_x;
+sems[j].y+=w_y; smy+=w_y;
+
+if(draw_)ctx.fillRect(smx,smy,s_high/5,s_high/5);
+}
+// end sems's loop
+
+//=============================================================================================================================================
+
+for(var i=0;i<pred.length;i++)
+{
+var th_p = pred[i];
+if(th_p==undefined) continue;
+var dc = th_p.dc;
+var px=th_p.x,py=th_p.y;
+var typep = th_p.t;
+
+if(th_p.h<=-5) {ground[Math.floor(py)][Math.floor(px)]+=th_p.sz; 
+field[Math.floor(py)][Math.floor(px)]=false;delete pred[i];continue;} // умирание из-за недостатка энергии 
+
+
+if(th_p.h>=25&&Math.random()>0.6) {pred.push({dc:dc+(1-Math.floor()*2)/2,f:0,fx:0,fy:0,t:typep,h:14,x:px+1,y:py+1,sz:1,age:1});th_p.h-=15;} 
+if(th_p.h>=30) continue;
+
+
+
+if(age>250&&Math.random()>0.9) {delete pred[i];continue;}
+if(draw_){
+ctx.fillStyle='yellow';
+if(typep=='h') {ctx.fillStyle='red';}
+	
+ctx.fillRect(th_p.x,th_p.y,sq,sq);
+}
+
+
+th_p.h-=.2;
+//if(typep=='h') th_p.h-=.2;
+
+th_p.age++;
+var ch_t='h';
+var types_=['t','h'];
+if(typep=='t') ch_t = types_[Math.floor(Math.random()*2)];
+
+
+var zr = {'t':30,'h':120};
+
+var num_r=null,min_d=999999999;
+
+var zhs;//жертва
+if(typep=='t') zhs = rast;
+else if(typep='h') zhs = pred;
+
+for(var j=0;j<zhs.length;j++) 
+	if(zhs[j]==undefined||(typep=='h'&&(i==j||zhs[j].t=='h'))) continue; 
+   else if(dist(px,py,zhs[j].x,zhs[j].y)<min_d&&dist(px,py,zhs[j].x,zhs[j].y)<zr[typep])
+	 {num_r=j;min_d=dist(px,py,zhs[j].x,zhs[j].y);}
+
+
+if(num_r===null) {
+if(th_p.f==0) {th_p.fx = th_p.x+18*(Math.floor(Math.random()*3)); th_p.fx = th_p.x+18*(Math.floor(Math.random()*3)); th_p.f=Math.floor(Math.random()*10)+1;}
+if(th_p.x>th_p.fx) th_p.x--;
+if(th_p.y>th_p.fy) th_p.y--;
+if(th_p.x<th_p.fx) th_p.x++;
+if(th_p.y<th_p.fy) th_p.y++;
+th_p.f--;
+}
+else {
+var cur_r=zhs[num_r];
+
+if(min_d<1.5) {th_p.h+=cur_r.sz;th_p.sz+=cur_r.sz; field[cur_r.y][cur_r.x]=false;if(typep=='t') delete rast[num_r]; else if(typep=='h') delete pred[num_r];continue;}
+var crx=cur_r.x, cry = cur_r.y;
+var dc = 1;
+if(px>crx) th_p.x-=dc;
+if(py>cry) th_p.y-=dc;
+if(px<crx) th_p.x+=dc;
+if(py<cry) th_p.y+=dc;
+
+}
+if(typep=='t')
+{
+	num_r = null;
+   min_d=20*zr['t'];
+	for(var j=0;j<pred.length;j++) 
+	if(pred[j]==undefined||pred[j].t=='t') continue;
+   else if(dist(px,py,pred[j].x,pred[j].y)<min_d&&dist(px,py,pred[j].x,pred[j].y)<1.5*zr[typep])
+	 {num_r=j;min_d=dist(px,py,pred[j].x,pred[j].y);}
+  
+if(num_r==null) continue;
+
+cur_h=pred[num_r];
+ crx=cur_h.x, cry = cur_h.y;
+
+if(px>crx) th_p.x+=1;
+if(py>cry) th_p.y+=1;
+if(px<crx) th_p.x-=1;
+if(py<cry) th_p.y-=1;
+
+
+}
+
+if(th_p.x<0) th_p.x=W-1;
+if(th_p.y<0) th_p.y=H-1;
+
+if(th_p.x>=W) th_p.x=0;
+if(th_p.y>=H) th_p.y=0;
+
+
+
+
+} //end zoo's loop
+
+
+tt=!tt;
+
+if(tt&&Math.random()>0.5)
+{
+var newc=[];
+for(var i=0;i<rast.length;i++) if(rast[i]!==undefined) newc.push(rast[i]);
+rast = newc;
+newc=[];
+
+for(var i=0;i<pred.length;i++) if(pred[i]!==undefined) newc.push(pred[i]);
+pred = newc;
+newc=[];
+
+for(var i=0;i<sems.length;i++) if(sems[i].ex) newc.push(sems[i]);
+sems = newc;
+newc=[];
+
+
+}
+
+requestAnimationFrame(draw);
+//setTimeout(draw,100);	
+}
+draw();
+</script>
+
+</html>
